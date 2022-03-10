@@ -12,82 +12,108 @@ require("dotenv").config();
 app.use(formidable());
 app.use(cors());
 
-// // PARTIE MONGOOSE - USER
-// mongoose.connect(process.env.MONGODB_URI, {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true,
-//   // useCreateIndex: true,
-// });
+// PARTIE MONGOOSE - USER
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  // useCreateIndex: true,
+});
 
-// const User = mongoose.model("users", {
-//   email: {
-//     unique: true,
-//     type: String,
-//   },
-//   account: {
-//     username: {
-//       required: true,
-//       type: String,
-//     },
-//     phone: String,
-//     vegStatus: String,
-//     city: String,
-//     yearOfBirth: Number,
-//   },
-//   token: String,
-//   hash: String,
-//   salt: String,
-// });
+const User = mongoose.model("users", {
+  email: {
+    unique: true,
+    type: String,
+  },
+  account: {
+    username: {
+      required: true,
+      type: String,
+    },
+    phone: String,
+    vegStatus: String,
+    city: String,
+    yearOfBirth: Number,
+  },
+  token: String,
+  hash: String,
+  salt: String,
+});
 
-// app.post("/user/signup", async (req, res) => {
-//   console.log(req.fields);
-//   try {
-//     const user = await User.findOne({ email: req.fields.email });
+app.post("/user/signup", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.fields.email });
 
-//     if (user) {
-//       res.status(409).json({ message: "This email already has an account" });
-//     } else {
-//       if (
-//         req.fields.email &&
-//         req.fields.password &&
-//         req.fields.username &&
-//         req.fields.vegStatus &&
-//         req.fields.city &&
-//         req.fields.yearOfBirth
-//       ) {
-//         const token = uid2(64);
-//         const salt = uid2(64);
-//         const hash = SHA256(req.fields.password + salt).toString(encBase64);
+    if (user) {
+      res.status(409).json({ message: "This email already has an account" });
+    } else {
+      if (
+        req.fields.email &&
+        req.fields.password &&
+        req.fields.username &&
+        req.fields.vegStatus &&
+        req.fields.city &&
+        req.fields.yearOfBirth
+      ) {
+        console.log("here we are");
+        const token = uid2(64);
+        const salt = uid2(64);
+        const hash = SHA256(req.fields.password + salt).toString(encBase64);
 
-//         const newUser = new User({
-//           email: req.fields.email,
-//           token: token,
-//           hash: hash,
-//           salt: salt,
-//           account: {
-//             username: req.fields.username,
-//             vegStatus: req.fields.vegStatus,
-//             city: req.fields.city,
-//             yearOfBirth: req.fields.yearOfBirth,
-//           },
-//         });
+        const newUser = new User({
+          email: req.fields.email,
+          token: token,
+          hash: hash,
+          salt: salt,
+          account: {
+            username: req.fields.username,
+            vegStatus: req.fields.vegStatus,
+            city: req.fields.city,
+            yearOfBirth: req.fields.yearOfBirth,
+          },
+        });
 
-//         await newUser.save();
-//         res.status(200).json({
-//           _id: newUser._id,
-//           email: newUser.email,
-//           token: newUser.token,
-//           account: newUser.account,
-//         });
-//       } else {
-//         res.status(400).json({ message: "Missing parameters" });
-//       }
-//     }
-//   } catch (error) {
-//     console.log(error.message);
-//     res.status(400).json({ message: error.message });
-//   }
-// });
+        await newUser.save();
+        res.status(200).json({
+          _id: newUser._id,
+          email: newUser.email,
+          token: newUser.token,
+          account: newUser.account,
+        });
+      } else {
+        res.status(400).json({ message: "Missing parameters" });
+      }
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.post("/user/login", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.fields.email });
+
+    if (user) {
+      if (
+        SHA256(req.fields.password + user.salt).toString(encBase64) ===
+        user.hash
+      ) {
+        res.status(200).json({
+          _id: user._id,
+          token: user.token,
+          account: user.account,
+        });
+      } else {
+        res.status(401).json({ error: "Unauthorized" });
+      }
+    } else {
+      res.status(400).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+});
 
 // PARTIE REQUÊTES RESTAURANTS
 app.get("/", (req, res) => {
