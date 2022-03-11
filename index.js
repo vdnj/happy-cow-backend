@@ -54,7 +54,6 @@ app.post("/user/signup", async (req, res) => {
         req.fields.city &&
         req.fields.yearOfBirth
       ) {
-        console.log("here we are");
         const token = uid2(64);
         const salt = uid2(64);
         const hash = SHA256(req.fields.password + salt).toString(encBase64);
